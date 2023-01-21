@@ -2,10 +2,11 @@
 use core::panic;
 use std::{
     collections::VecDeque,
+    env::args,
     fs,
+    path::Path,
     process::{Command, Output},
-    sync::Arc,
-    sync::Mutex,
+    sync::{Arc, Mutex},
     thread,
 };
 
@@ -21,9 +22,28 @@ struct TaskQueue {
     rootnest: i32,
 }
 fn main() {
-    let n = 2;
-    let rootpath = "E:\\Projects\\multithreaded-grep-rust\\test";
-    let search_string = "Handwire";
+    let args: Vec<String> = args().collect();
+    let n: i32;
+    let rootpath: String;
+    let search_string: String;
+
+    match args.as_slice() {
+        [_, a1, a2, a3] => {
+            n = a1
+                .to_owned()
+                .parse::<i32>()
+                .unwrap_or_else(|_| panic!("Invalid argument 1"));
+            rootpath = fs::canonicalize(Path::new(a2))
+                .unwrap_or_else(|_| panic!("Something wrong with rootpath argument 2"))
+                .to_str()
+                .unwrap()
+                .strip_prefix("\\\\?\\")
+                .unwrap()
+                .to_owned();
+            search_string = a3.to_owned();
+        }
+        _ => panic!("Not enough Arguments!"),
+    }
 
     let tq = Arc::new(Mutex::new(TaskQueue {
         q: VecDeque::new(),
@@ -53,6 +73,7 @@ fn main() {
                 } else {
                     continue;
                 }
+                println!("[{}] DIR {:?}", wid, path);
             }
 
             if let Ok(dir) = fs::read_dir(path) {
@@ -64,9 +85,8 @@ fn main() {
                         let mut tq = tq.lock().unwrap();
                         tq.q.push_back(entry.path().to_str().unwrap().to_owned());
                         tq.rootnest += 1;
-                        println!("[{}] DIR {:?}", wid, entry.path());
                     } else if metadata.is_file() {
-                        let status = grep(entry.path().to_str().unwrap(), search_string)
+                        let status = grep(entry.path().to_str().unwrap(), "Handwire")
                             .status
                             .success();
                         println!(
