@@ -58,6 +58,7 @@ fn main() {
 
     for wid in 0..n {
         let tq = tq.clone();
+        let search_string = search_string.clone();
         let worker = thread::spawn(move || loop {
             // Test
             let path: String;
@@ -86,7 +87,7 @@ fn main() {
                         tq.q.push_back(entry.path().to_str().unwrap().to_owned());
                         tq.rootnest += 1;
                     } else if metadata.is_file() {
-                        let status = grep(entry.path().to_str().unwrap(), "Handwire")
+                        let status = grep(entry.path().to_str().unwrap(), &search_string)
                             .status
                             .success();
                         println!(
